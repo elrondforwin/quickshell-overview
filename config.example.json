@@ -1,6 +1,11 @@
 {
   "appearance": {
-    "useMatugenColors": false,
+    "colorSource": "default",
+    "caelestia": {
+      "autoRefresh": true,
+      "refreshInterval": 2000,
+      "accentProfile": "vibrant"
+    },
     "rounding": {
       "unsharpen": 2,
       "verysmall": 8,

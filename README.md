@@ -229,7 +229,12 @@ Increase `topMargin` to move the overview down. Decrease it to move up.
 ```json
 {
   "appearance": {
-    "useMatugenColors": false,
+    "colorSource": "default",
+    "caelestia": {
+      "autoRefresh": true,
+      "refreshInterval": 2000,
+      "accentProfile": "vibrant"
+    },
     "rounding": {
       "unsharpen": 2,
       "verysmall": 8,
@@ -293,6 +298,8 @@ Increase `topMargin` to move the overview down. Decrease it to move up.
 ### Theme & Colors
 
 Most theme sizing/timing options are now configurable via `config.json`:
+- `appearance.colorSource` (`default`, `matugen`, `caelestia`)
+- `appearance.caelestia.*` (`autoRefresh`, `refreshInterval`, `accentProfile`)
 - `appearance.rounding.*`
 - `appearance.font.*`
 - `appearance.animation.duration.*`
@@ -323,7 +330,7 @@ output_path = "~/.config/quickshell/overview/common/Appearance.colors.qml"
 ```json
 {
   "appearance": {
-    "useMatugenColors": true
+    "colorSource": "matugen"
   }
 }
 ```
@@ -334,6 +341,25 @@ matugen image /path/to/your/wallpaper.jpg
 ```
 
 This generates `Appearance.colors.qml` which the overview loads automatically. Re-run step 5 whenever you change your wallpaper.
+
+### Caelestia
+
+If you use Caelestia, set the source to `caelestia`:
+
+```json
+{
+  "appearance": {
+    "colorSource": "caelestia",
+    "caelestia": {
+      "autoRefresh": true,
+      "refreshInterval": 2000,
+      "accentProfile": "vibrant"
+    }
+  }
+}
+```
+
+Overview reads the active palette from `caelestia scheme get` and refreshes it live when `autoRefresh` is enabled, so wallpaper/scheme changes can apply without restarting overview.
 
 ---
 

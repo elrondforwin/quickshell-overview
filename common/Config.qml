@@ -43,12 +43,25 @@ Singleton {
 
     function readString(path, fallback) {
         const value = read(path, fallback);
-        return typeof value === "string" ? value : fallback;
+        if (typeof value !== "string")
+            return fallback;
+
+        const trimmed = value.trim();
+        return trimmed.length > 0 ? trimmed : fallback;
     }
 
     property QtObject options: QtObject {
         property QtObject appearance: QtObject {
-            property bool useMatugenColors: root.readBool("appearance.useMatugenColors", false)
+            property string colorSource: root.readString(
+                "appearance.colorSource",
+                root.readBool("appearance.useMatugenColors", false) ? "matugen" : "default"
+            )
+            property bool useMatugenColors: colorSource === "matugen"
+            property QtObject caelestia: QtObject {
+                property bool autoRefresh: root.readBool("appearance.caelestia.autoRefresh", true)
+                property int refreshInterval: root.readInt("appearance.caelestia.refreshInterval", 2000)
+                property string accentProfile: root.readString("appearance.caelestia.accentProfile", "vibrant")
+            }
 
             property QtObject rounding: QtObject {
                 property int unsharpen: root.readInt("appearance.rounding.unsharpen", 2)

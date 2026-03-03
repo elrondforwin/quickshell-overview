@@ -3,24 +3,33 @@ pragma ComponentBehavior: Bound
 
 import QtQuick
 import Quickshell
+import Quickshell.Io
 import "functions"
 import "." as Common
 
 Singleton {
     id: root
-    property QtObject m3colors: Common.Config.options.appearance.useMatugenColors && matugenLoader.item 
-                                 ? matugenLoader.item 
-                                 : defaultColors
+    property string colorSource: Common.Config.options.appearance.colorSource
+    property string caelestiaAccentProfile: Common.Config.options.appearance.caelestia.accentProfile
+    property string lastCaelestiaPayload: ""
+    property QtObject m3colors: {
+        if (colorSource === "matugen" && matugenLoader.item)
+            return matugenLoader.item;
+        if (colorSource === "caelestia" && caelestiaPaletteLoaded)
+            return caelestiaColors;
+        return defaultColors;
+    }
     property QtObject animation
     property QtObject animationCurves
     property QtObject colors
     property QtObject rounding
     property QtObject font
     property QtObject sizes
+    property bool caelestiaPaletteLoaded: false
 
     Loader {
         id: matugenLoader
-        active: Common.Config.options.appearance.useMatugenColors
+        active: root.colorSource === "matugen"
         source: "Appearance.colors.qml"
     }
 
@@ -49,6 +58,196 @@ Singleton {
         property color m3outline: "#988E97"
         property color m3outlineVariant: "#4C444D"
         property color m3shadow: "#000000"
+    }
+
+    property QtObject caelestiaColors: QtObject {
+        property bool darkmode: defaultColors.darkmode
+        property color m3primary: defaultColors.m3primary
+        property color m3onPrimary: defaultColors.m3onPrimary
+        property color m3primaryContainer: defaultColors.m3primaryContainer
+        property color m3onPrimaryContainer: defaultColors.m3onPrimaryContainer
+        property color m3secondary: defaultColors.m3secondary
+        property color m3onSecondary: defaultColors.m3onSecondary
+        property color m3secondaryContainer: defaultColors.m3secondaryContainer
+        property color m3onSecondaryContainer: defaultColors.m3onSecondaryContainer
+        property color m3background: defaultColors.m3background
+        property color m3onBackground: defaultColors.m3onBackground
+        property color m3surface: defaultColors.m3surface
+        property color m3surfaceContainerLow: defaultColors.m3surfaceContainerLow
+        property color m3surfaceContainer: defaultColors.m3surfaceContainer
+        property color m3surfaceContainerHigh: defaultColors.m3surfaceContainerHigh
+        property color m3surfaceContainerHighest: defaultColors.m3surfaceContainerHighest
+        property color m3onSurface: defaultColors.m3onSurface
+        property color m3surfaceVariant: defaultColors.m3surfaceVariant
+        property color m3onSurfaceVariant: defaultColors.m3onSurfaceVariant
+        property color m3inverseSurface: defaultColors.m3inverseSurface
+        property color m3inverseOnSurface: defaultColors.m3inverseOnSurface
+        property color m3outline: defaultColors.m3outline
+        property color m3outlineVariant: defaultColors.m3outlineVariant
+        property color m3shadow: defaultColors.m3shadow
+    }
+
+    function loadCaelestiaPalette() {
+        getCaelestiaScheme.running = true;
+    }
+
+    function relativeLuminance(color) {
+        const c = Qt.color(color);
+        function channel(v) {
+            return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4);
+        }
+        return (0.2126 * channel(c.r)) + (0.7152 * channel(c.g)) + (0.0722 * channel(c.b));
+    }
+
+    function bestOnColor(backgroundColor) {
+        return relativeLuminance(backgroundColor) > 0.5 ? "#121212" : "#f5f5f5";
+    }
+
+    function firstColor(palette, keys, fallback) {
+        for (const key of keys) {
+            if (palette[key])
+                return palette[key];
+        }
+        return fallback;
+    }
+
+    function applyCaelestiaPalette(palette, mode) {
+        if (caelestiaAccentProfile === "vibrant") {
+            const primary = firstColor(palette, ["blue", "klink", "term12", "primary"], defaultColors.m3primary);
+            const secondary = firstColor(palette, ["mauve", "lavender", "term13", "secondary"], defaultColors.m3secondary);
+            const tertiary = firstColor(palette, ["pink", "rosewater", "term11", "tertiary"], defaultColors.m3secondaryContainer);
+            const primaryContainer = firstColor(palette, ["sapphire", "klinkSelection", "primaryContainer"], defaultColors.m3primaryContainer);
+            const secondaryContainer = firstColor(palette, ["surface2", "secondaryContainer"], defaultColors.m3secondaryContainer);
+
+            caelestiaColors.m3primary = primary;
+            caelestiaColors.m3onPrimary = bestOnColor(primary);
+            caelestiaColors.m3primaryContainer = primaryContainer;
+            caelestiaColors.m3onPrimaryContainer = bestOnColor(primaryContainer);
+            caelestiaColors.m3secondary = secondary;
+            caelestiaColors.m3onSecondary = bestOnColor(secondary);
+            caelestiaColors.m3secondaryContainer = secondaryContainer;
+            caelestiaColors.m3onSecondaryContainer = bestOnColor(secondaryContainer);
+            // Preserve a stronger accent presence across UI mixes.
+            caelestiaColors.m3surfaceVariant = firstColor(palette, ["surface1", "surfaceVariant"], defaultColors.m3surfaceVariant);
+            caelestiaColors.m3outline = firstColor(palette, ["overlay2", "outline"], defaultColors.m3outline);
+            caelestiaColors.m3outlineVariant = firstColor(palette, ["overlay0", "outlineVariant"], defaultColors.m3outlineVariant);
+            if (tertiary)
+                caelestiaColors.m3secondaryContainer = ColorUtils.mix(secondaryContainer, tertiary, 0.7);
+        } else {
+            const map = {
+                "primary": "m3primary",
+                "onPrimary": "m3onPrimary",
+                "primaryContainer": "m3primaryContainer",
+                "onPrimaryContainer": "m3onPrimaryContainer",
+                "secondary": "m3secondary",
+                "onSecondary": "m3onSecondary",
+                "secondaryContainer": "m3secondaryContainer",
+                "onSecondaryContainer": "m3onSecondaryContainer",
+                "surfaceVariant": "m3surfaceVariant",
+                "outline": "m3outline",
+                "outlineVariant": "m3outlineVariant"
+            };
+            for (const key in map) {
+                if (palette[key])
+                    caelestiaColors[map[key]] = palette[key];
+            }
+        }
+
+        // Keep foundational tones from Material keys for readability.
+        const baseMap = {
+            "background": "m3background",
+            "onBackground": "m3onBackground",
+            "surface": "m3surface",
+            "surfaceContainerLow": "m3surfaceContainerLow",
+            "surfaceContainer": "m3surfaceContainer",
+            "surfaceContainerHigh": "m3surfaceContainerHigh",
+            "surfaceContainerHighest": "m3surfaceContainerHighest",
+            "onSurface": "m3onSurface",
+            "inverseSurface": "m3inverseSurface",
+            "inverseOnSurface": "m3inverseOnSurface",
+            "shadow": "m3shadow"
+        };
+        for (const key in baseMap) {
+            if (palette[key])
+                caelestiaColors[baseMap[key]] = palette[key];
+        }
+
+        if (palette["onSurfaceVariant"])
+            caelestiaColors.m3onSurfaceVariant = palette["onSurfaceVariant"];
+
+        if (mode === "light")
+            caelestiaColors.darkmode = false;
+        else if (mode === "dark")
+            caelestiaColors.darkmode = true;
+    }
+
+    Process {
+        id: getCaelestiaScheme
+        command: ["sh", "-lc", "caelestia scheme get 2>/dev/null || true"]
+        stdout: StdioCollector {
+            id: caelestiaCollector
+            onStreamFinished: {
+                const text = caelestiaCollector.text;
+                if (!text || !text.trim()) {
+                    root.caelestiaPaletteLoaded = false;
+                    return;
+                }
+
+                const ansiPattern = /\x1b\[[0-9;]*m/g;
+                const lines = text.split("\n");
+                let mode = "";
+                const palette = ({});
+
+                for (const rawLine of lines) {
+                    const line = rawLine.replace(ansiPattern, "").trim();
+
+                    if (line.startsWith("Mode:")) {
+                        mode = line.split(":")[1]?.trim()?.toLowerCase() ?? "";
+                        continue;
+                    }
+
+                    const match = line.match(/^([A-Za-z0-9_]+):\s*.*?([0-9a-fA-F]{6})$/);
+                    if (!match)
+                        continue;
+
+                    palette[match[1]] = `#${match[2]}`;
+                }
+
+                const normalized = JSON.stringify({ mode: mode, palette: palette, profile: caelestiaAccentProfile });
+                if (normalized === root.lastCaelestiaPayload)
+                    return;
+
+                root.lastCaelestiaPayload = normalized;
+                applyCaelestiaPalette(palette, mode);
+                root.caelestiaPaletteLoaded = Object.keys(palette).length > 0;
+            }
+        }
+    }
+
+    Timer {
+        id: caelestiaRefreshTimer
+        interval: Math.max(500, Common.Config.options.appearance.caelestia.refreshInterval)
+        running: root.colorSource === "caelestia" && Common.Config.options.appearance.caelestia.autoRefresh
+        repeat: true
+        triggeredOnStart: false
+        onTriggered: root.loadCaelestiaPalette()
+    }
+
+    onColorSourceChanged: {
+        if (colorSource === "caelestia")
+            loadCaelestiaPalette();
+    }
+
+    onCaelestiaAccentProfileChanged: {
+        if (colorSource === "caelestia") {
+            root.lastCaelestiaPayload = "";
+            loadCaelestiaPalette();
+        }
+    }
+
+    Component.onCompleted: {
+        if (colorSource === "caelestia")
+            loadCaelestiaPalette();
     }
 
     colors: QtObject {
