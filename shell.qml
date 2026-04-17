@@ -13,5 +13,17 @@ import Quickshell
 import Quickshell.Hyprland
 
 ShellRoot {
+    Connections {
+        target: Quickshell
+
+        function onReloadCompleted() {
+            Quickshell.inhibitReloadPopup();
+        }
+
+        function onReloadFailed(error: string) {
+            Quickshell.inhibitReloadPopup();
+        }
+    }
+
     Overview {}
 }
