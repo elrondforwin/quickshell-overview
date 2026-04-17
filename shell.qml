@@ -19,10 +19,6 @@ ShellRoot {
         function onReloadCompleted() {
             Quickshell.inhibitReloadPopup();
         }
-
-        function onReloadFailed(error: string) {
-            Quickshell.inhibitReloadPopup();
-        }
     }
 
     Overview {}
